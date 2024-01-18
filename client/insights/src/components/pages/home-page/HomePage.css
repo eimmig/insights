@@ -1,0 +1,190 @@
+  body {
+    background-color: rgb(34,34,34);
+    color: white;
+    margin: 0 auto;
+    padding: 15px;
+    position: relative;
+  }
+
+  header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    top: 0;
+    left: 0;
+  }
+
+  #title {
+    flex-direction: column;
+    line-height: 15px;
+    text-align: left;
+  }
+
+  h1 {
+    font-weight: 200;
+  }
+
+  main {
+    display: flex;
+    margin: 0 auto;
+    padding: 15px;
+    position: relative;
+    flex-direction: row;
+    margin-top: 50px;
+    max-width: 1200px;
+  }
+
+  h2 {
+    font-size: 56px;
+    line-height: 50px;
+    min-width: 500px;
+  }
+
+  h4 {
+    line-height: 30px;
+    margin: 15px;
+  }
+
+  img {
+    width: 100%;
+    margin-left: 20%;
+  }
+
+  aside {
+    width: 30%;
+  }
+
+  form{
+    display: flex;
+    flex-direction: column;
+    width: 70%;
+    margin-top: 15px
+}
+
+form [type="submit"]{
+    height: 50px;
+    width: 50%;
+    background-color: rgb(132, 14, 201);
+    color: white;
+    font-weight: bold;
+}
+
+form [type="submit"]:hover{
+    cursor: pointer;
+}
+  
+  .face-background {
+    flex-direction: column;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #2980b9;
+    border-radius: 50%;
+    width: 32vh;
+    height: 32vh;
+    transition: 1s;
+    margin-top: 10px;
+  }
+
+  .face-background:hover {
+    background: #3498db;
+    rotate: 360deg;
+  }
+  
+  .face {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background-color: #ffcd00;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .face::before {
+    content: "";
+    top: 180px;
+    width: 150px;
+    height: 70px;
+    background: transparent;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 80px;
+    border: 5px solid #333;
+    border-color: transparent transparent #333 transparent;
+    transition: 0.2s;
+  }
+  
+  .face:hover::before {
+    top: 180px;
+    width: 150px;
+    height: 70px;
+    border-color: transparent;
+    background: #333;
+    border-radius: 0;
+    border-bottom-left-radius: 70px;
+    border-bottom-right-radius: 70px;
+  }
+  
+  .eyes {
+    position: relative;
+    top: -40px;
+    display: flex;
+  }
+  
+  .eyes .eye {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: block;
+    background: #fff;
+    margin: 0 15px;
+    border-radius: 50%;
+  }
+  
+  .eyes .eye::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 25px;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    background: #333;
+    border-radius: 50%;
+  }
+
+  .seila {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media screen and (max-width: 768px) {
+    body {
+      padding: 15px;
+    }
+  
+    header {
+      flex-direction: column; 
+    }
+  
+    #title {
+      line-height: 25px;
+    }
+  
+    main {
+      flex-direction: column;
+      margin-top: 20px;
+    }
+  
+    aside {
+      width: 100%;
+    }
+  
+    img {
+      width: 100%; 
+    }
+  }
