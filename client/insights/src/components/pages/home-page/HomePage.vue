@@ -66,13 +66,13 @@
       };
   
     const charts = [
-        '/public/images/undraw_Charts_re_5qe9.png',
-        '/public/images/undraw_Data_re_80ws.png',
-        '/public/images/undraw_Growing_re_olpi.png',
-        '/public/images/undraw_Setup_analytics_re_foim.png',
-        '/public/images/undraw_Statistic_chart_re_w0pk.png',
-        '/public/images/undraw_Statistics_re_kox4.png',
-        '/public/images/undraw_visual_data_re_mxxo.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Charts_re_5qe9.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Data_re_80ws.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Growing_re_olpi.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Setup_analytics_re_foim.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Statistic_chart_re_w0pk.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_Statistics_re_kox4.png',
+        'https://github.com/eimmig/insights/blob/main/client/insights/public/images/undraw_visual_data_re_mxxo.png',
     ];
   
     const responsiveOptions = ref([
