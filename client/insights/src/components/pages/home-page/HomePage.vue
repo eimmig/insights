@@ -19,8 +19,11 @@
             name="file"
             url="http://localhost:3000/upload"
             accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-            :maxFileSize="1000000"
-            @upload="onUpload()"
+            :auto="true"
+            :multiple="false"
+            :fileLimit="1"
+            @upload="onUpload"
+            @error="onErrorUpload"
           />
         </div>
       </aside>
@@ -36,6 +39,7 @@ import FileUpload from 'primevue/fileupload';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
 import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default {
   components: { FileUpload, Toast },
@@ -43,6 +47,7 @@ export default {
   setup() {
     const toast = useToast();
     const textWriting = ref(null);
+    const router = useRouter();
 
     const escrever = (str, done) => {
       const char = str.split('').reverse();
@@ -95,9 +100,19 @@ export default {
       prox(prox);
     };
 
-    const onUpload = () => {
+    const onUpload = (event) => {
+      const jsonResponse = event.xhr.response;
+      
+      sessionStorage.setItem('dataForCharts', jsonResponse);
+
       toast.add({ severity: 'success', summary: 'Success', detail: 'File Uploaded', life: 3000 });
+      router.push('/dashboard');
     };
+
+    const onErrorUpload = () => {
+      toast.add({ severity: 'error', summary: 'Error', detail: 'Invalid file', life: 3000 });
+    };
+
 
     onMounted(() => {
       rodape(textos);
@@ -110,6 +125,7 @@ export default {
 
     return {
       onUpload,
+      onErrorUpload,
       textWriting,
     };
   },
@@ -117,56 +133,6 @@ export default {
 </script>
 
 <style>
-
-body {
-    background-color: rgb(34,34,34);
-    color: white;
-    margin: 0 auto;
-    padding: 15px;
-    position: relative;
-  }
-
-  header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-    top: 0;
-    left: 0;
-  }
-
-  #title {
-    flex-direction: column;
-    line-height: 15px;
-    text-align: left;
-  }
-
-  h1 {
-    font-weight: 200;
-  }
-
-  main {
-    display: flex;
-    margin: 0 auto;
-    padding: 15px;
-    position: relative;
-    flex-direction: row;
-    margin-top: 50px;
-    max-width: 1200px;
-  }
-
-  h2 {
-    font-size: 56px;
-    line-height: 50px;
-    min-width: 500px;
-  }
-
-  h4 {
-    line-height: 30px;
-    margin: 15px;
-  }
-
   img {
     width: 100%;
     margin-left: 20%;
