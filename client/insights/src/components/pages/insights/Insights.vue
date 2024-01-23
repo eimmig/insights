@@ -31,7 +31,12 @@
         </div>
       </div>
       <div class="change-date-filter">
-        <Button label="Apply" rounded style="margin-right: 10px" />
+        <Button
+          label="Apply"
+          @click="setFilters"
+          rounded
+          style="margin-right: 10px"
+        />
         <div class="flex-auto">
           <Calendar
             v-model="startDate"
@@ -151,6 +156,60 @@ export default {
     goToHome() {
       this.router.push("/");
     },
+
+    filterDataByDateRange(data, startDate, endDate) {
+      const filteredData = data.filter((item) => {
+        const itemDate = new Date(item.date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        return itemDate >= start && itemDate <= end;
+      });
+
+      return filteredData;
+    },
+    setChartData() {
+      const filteredMrrData = this.filterDataByDateRange(
+        this.dataCharts.dataMrr,
+        this.startDate,
+        this.endDate
+      );
+      const filteredChurnData = this.filterDataByDateRange(
+        this.dataCharts.dataChurn,
+        this.startDate,
+        this.endDate
+      );
+      const filteredAmvData = this.filterDataByDateRange(
+        this.dataCharts.dataAmv,
+        this.startDate,
+        this.endDate
+      );
+      const filteredAscData = this.filterDataByDateRange(
+        this.dataCharts.dataAsc,
+        this.startDate,
+        this.endDate
+      );
+
+      if (this.chartMrr.value && this.chartMrr.value.series) {
+        const mrrSeries = this.chartMrr.value.series.getIndex(0);
+        mrrSeries.data.setAll(filteredMrrData);
+      }
+
+      if (this.chartChurn && this.chartChurn.series) {
+        const churnSeries = this.chartChurn.series.getIndex(0);
+        churnSeries.data.setAll(filteredChurnData);
+      }
+
+      if (this.chartAmv && this.chartAmv.series) {
+        const amvSeries = this.chartAmv.series.getIndex(0);
+        amvSeries.data.setAll(filteredAmvData);
+      }
+
+      if (this.chartAsc && this.chartAsc.series) {
+        const ascSeries = this.chartAsc.series.getIndex(0);
+        ascSeries.data.setAll(filteredAscData);
+      }
+    },
   },
   setup() {
     const chartMrr = ref(null);
@@ -160,6 +219,7 @@ export default {
     const startDate = ref(new Date());
     const endDate = ref(new Date());
     const visible = ref(false);
+    const spinnerOn = ref(false);
     const router = useRouter();
 
     let activeContractsValue = ref(0);
@@ -168,6 +228,7 @@ export default {
     let canceledContractsValue = ref(0);
     let canceledAverageTicketValue = ref(0);
     let canceledClientsTotal = ref(0);
+    let dataCharts = ref(0);
 
     const getDataCharts = (type) => {
       const sessionStorageData = sessionStorage.getItem("dataForCharts");
@@ -183,13 +244,14 @@ export default {
         case "cards":
           if (sessionStorageData) {
             const cards = parsedData.jsonData.cards;
-            console.log("cards", cards);
-            activeContractsValue.value = cards.totalTicketAtivo;
-            activeAverageTicketValue.value = cards.ticketMedioAtivo;
-            activeClientsTotal.value = cards.totalContratosAtivos;
-            canceledContractsValue.value = cards.totalTicketCancelado;
-            canceledAverageTicketValue.value = cards.ticketMedioCancelado;
-            canceledClientsTotal.value = cards.totalContratosCancelados;
+            activeContractsValue.value = cards.totalActiveTicket;
+            activeAverageTicketValue.value =
+              cards.averageValuePerActiveContract;
+            activeClientsTotal.value = cards.totalActiveContracts;
+            canceledContractsValue.value = cards.totalCanceledTicket;
+            canceledAverageTicketValue.value =
+              cards.averageValuePerCanceledContract;
+            canceledClientsTotal.value = cards.totalCanceledContracts;
             return;
           } else {
             return;
@@ -206,6 +268,14 @@ export default {
           } else {
             return [];
           }
+        case "churn":
+          if (sessionStorageData) {
+            return parsedData.jsonData.dataChurn;
+          } else {
+            return [];
+          }
+        case "charts":
+          return parsedData.jsonData;
         default:
           return null;
       }
@@ -283,8 +353,8 @@ export default {
         am5xy.ColumnSeries.new(root, {
           xAxis: xAxis,
           yAxis: valorMedioAxis,
-          valueYField: "valor",
-          valueXField: "data",
+          valueYField: "value",
+          valueXField: "date",
           tooltip: am5.Tooltip.new(root, {
             labelText: "Full Value of Month R$ {valueY} ",
           }),
@@ -292,7 +362,7 @@ export default {
       );
 
       valorMedioSeries.data.processor = am5.DataProcessor.new(root, {
-        dateFields: ["data"],
+        dateFields: ["date"],
         dateFormat: "MM/yyyy",
       });
 
@@ -300,8 +370,8 @@ export default {
         am5xy.LineSeries.new(root, {
           xAxis: xAxis,
           yAxis: valorAxis,
-          valueYField: "valorMedio",
-          valueXField: "data",
+          valueYField: "averageValue",
+          valueXField: "date",
           tooltip: am5.Tooltip.new(root, {
             labelText: "Mid Value of Month R$ {valueY.formatNumber('#.00')}",
           }),
@@ -340,101 +410,89 @@ export default {
       chart.appear(1000, 100);
     };
 
-    const createChartChurn = () => {
+    const createChartChurn = (data) => {
       const root = am5.Root.new(chartChurn.value);
       root.setThemes([am5themes_Dark.new(root)]);
+
+      if (!data || data.length === 0) {
+        console.error("Missing or empty data.");
+        return;
+      }
 
       var chart = root.container.children.push(
         am5xy.XYChart.new(root, {
           panX: false,
           panY: false,
-          wheelX: "panX",
-          wheelY: "zoomX",
-          paddingLeft: 0,
+          wheelY: "none",
         })
       );
 
-      var cursor = chart.set(
-        "cursor",
-        am5xy.XYCursor.new(root, {
-          behavior: "zoomX",
-        })
-      );
-      cursor.lineY.set("visible", false);
-
-      var date = new Date();
-      date.setHours(0, 0, 0, 0);
-      var value = 100;
-
-      function generateData() {
-        value = Math.round(Math.random() * 10 - 5 + value);
-        am5.time.add(date, "day", 1);
-        return {
-          date: date.getTime(),
-          value: value,
-        };
+      if (!chart) {
+        console.error("Failed to create the chart.");
+        return;
       }
 
-      function generateDatas(count) {
-        var data = [];
-        for (var i = 0; i < count; ++i) {
-          data.push(generateData());
-        }
-        return data;
-      }
+      chart.zoomOutButton.set("forceHidden", true);
+      chart.get("colors").set("step", 2);
 
       var xAxis = chart.xAxes.push(
         am5xy.DateAxis.new(root, {
-          maxDeviation: 0,
-          baseInterval: {
-            timeUnit: "day",
-            count: 1,
-          },
+          baseInterval: { timeUnit: "month", count: 1 },
           renderer: am5xy.AxisRendererX.new(root, {
+            minGridDistance: 90,
             minorGridEnabled: true,
-            minorLabelsEnabled: true,
           }),
+          tooltip: am5.Tooltip.new(root, {}),
+          dateFormats: [
+            { period: "fff", format: "MMM dd, yyyy" },
+            { period: "ss", format: "MMM dd, yyyy" },
+            { period: "mm", format: "MMM dd, yyyy" },
+            { period: "hh", format: "MMM dd, yyyy" },
+            { period: "DD", format: "MMM dd, yyyy" },
+            { period: "WW", format: "MMM dd, yyyy" },
+            { period: "MM", format: "MMM dd, yyyy" },
+            { period: "YYYY", format: "MMM dd, yyyy" },
+          ],
+        })
+      );
+
+      var valorMedioAxisRenderer = am5xy.AxisRendererY.new(root, {});
+      valorMedioAxisRenderer.grid.template.set("forceHidden", true);
+      var valorMedioAxis = chart.yAxes.push(
+        am5xy.ValueAxis.new(root, {
+          renderer: valorMedioAxisRenderer,
           tooltip: am5.Tooltip.new(root, {}),
         })
       );
 
-      xAxis.set("minorDateFormats", {
-        day: "dd",
-        month: "MM",
-      });
-
-      var yAxis = chart.yAxes.push(
-        am5xy.ValueAxis.new(root, {
-          renderer: am5xy.AxisRendererY.new(root, {}),
-        })
-      );
-
-      var churnSeries = chart.series.push(
+      var valorMedioSeries = chart.series.push(
         am5xy.ColumnSeries.new(root, {
-          name: "Churn Rate",
           xAxis: xAxis,
-          yAxis: yAxis,
-          valueYField: "value",
+          yAxis: valorMedioAxis,
+          valueYField: "churn",
           valueXField: "date",
           tooltip: am5.Tooltip.new(root, {
-            labelText: "{valueY}",
+            labelText: "{valueY}% ",
           }),
         })
       );
 
-      churnSeries.columns.template.setAll({ strokeOpacity: 0 });
+      valorMedioSeries.data.processor = am5.DataProcessor.new(root, {
+        dateFields: ["date"],
+        dateFormat: "MM/yyyy",
+      });
 
       chart.set(
-        "scrollbarX",
-        am5.Scrollbar.new(root, {
-          orientation: "horizontal",
+        "cursor",
+        am5xy.XYCursor.new(root, {
+          xAxis: xAxis,
+          yAxis: valorMedioAxis,
         })
       );
 
-      var data = generateDatas(30);
-      churnSeries.data.setAll(data);
+      // Use o array de dados diretamente
+      valorMedioSeries.data.setAll(data);
 
-      churnSeries.appear(1000);
       chart.appear(1000, 100);
     };
 
@@ -460,7 +518,7 @@ export default {
       var xRenderer = am5xy.AxisRendererX.new(root, {
         cellStartLocation: 0.1,
         cellEndLocation: 0.9,
-        minGridDistance: 30,
+        minGridDistance: 80,
         minorGridEnabled: true,
       });
 
@@ -614,9 +672,8 @@ export default {
         })
       );
 
-
       var xRenderer = am5xy.AxisRendererX.new(root, {
-        minGridDistance: 70,
+        minGridDistance: 80,
         minorGridEnabled: true,
       });
 
@@ -698,10 +755,12 @@ export default {
 
     onMounted(() => {
       const dataMrr = getDataCharts("mrr");
+      const dataChurn = getDataCharts("churn");
       const dataAmv = getDataCharts("amv");
       const dataAsc = getDataCharts("asc");
+      dataCharts.value = getDataCharts("charts");
       createChartMrr(dataMrr);
-      createChartChurn();
+      createChartChurn(dataChurn);
       createChartAmv(dataAmv);
       createChartAsc(dataAsc);
       getDataCharts("cards");
@@ -715,6 +774,7 @@ export default {
       startDate,
       endDate,
       visible,
+      spinnerOn,
       router,
       activeContractsValue,
       activeAverageTicketValue,
@@ -722,6 +782,7 @@ export default {
       canceledContractsValue,
       canceledAverageTicketValue,
       canceledClientsTotal,
+      dataCharts,
     };
   },
 };

@@ -29,37 +29,37 @@ export class AppService {
       /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
       /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
     ];
-  
+
     for (const dateFormat of dateFormats) {
       if (dateFormat.test(String(value))) {
         return this.convertDateFormat(value, dateFormat);
       }
     }
-  
+
     return value;
   }
-  
+
   private convertDateFormat(value: any, format: RegExp): string | any {
     const match = String(value).match(format);
     if (match) {
       const [_, ...groups] = match;
 
-      if (match[0]?.length === 10) { 
+      if (match[0]?.length === 10) {
         const year = groups[2]?.length === 2 ? Number(groups[2]) + 2000 : Number(groups[2] || new Date().getFullYear());
         const month = String(groups[1]).padStart(2, '0');
-    
+
         return `${groups[0]}/${month}/${year}`;
       } else {
         const year = groups[2]?.length === 2 ? Number(groups[2]) + 2000 : Number(groups[2] || new Date().getFullYear());
         const month = String(groups[0]).padStart(2, '0');
-    
+
         return `${groups[1]}/${month}/${year}`;
       }
     }
-  
+
     return value;
   }
-  
+
   validateExcel(jsonDataWithoutFormatting: any[]): { isValid: boolean; mismatchedColumns: string[] } {
     const expectedColumns = [
       'quantidade cobranças',
@@ -72,42 +72,44 @@ export class AppService {
       'próximo ciclo',
       'ID assinante',
     ];
-    
+
     const firstRow = jsonDataWithoutFormatting[0];
-  
+
     const mismatchedColumns: string[] = [];
-  
+
     expectedColumns.forEach((col) => {
       const matchingValues = Object.values(firstRow).filter((value) => value === col);
       if (matchingValues.length === 0) {
         mismatchedColumns.push(col);
       }
     });
-  
+
     const isValid = mismatchedColumns.length === 0;
-  
+
     return { isValid, mismatchedColumns };
   }
 
   getDataForCharts(jsonData: any[]) {
     const [dataAvm, dataAsc, cards] = this.getDataForAvmChart(jsonData);
+    const [dataMrr, dataChurn] = this.getDataForMrrChart(jsonData)
     return {
       dataAvm,
       cards,
       dataAsc,
-      dataChurn: this.getDataForChurnChart(jsonData),
-      dataMrr: this.getDataForMrrChart(jsonData)
+      dataChurn,
+      dataMrr
     };
   }
 
   getDataForMrrChart(jsonData: any[]) {
     const data: { [key: number]: number } = {};
+    const dataChrurnClientsActives: { [key: number]: number } = {};
     const occurrence: { [key: string]: number } = {};
 
     const jsonDataSorted = jsonData.sort((a, b) => {
       const dateA = this.parseDateString(a[2]);
       const dateB = this.parseDateString(b[2]);
-    
+
       return dateA.getTime() - dateB.getTime();
     });
 
@@ -115,22 +117,22 @@ export class AppService {
     const lastElement = jsonDataSorted[jsonDataSorted.length - 1];
 
     const monthsBetweenDates = this.getMonthsBetweenDates(firstElement[2], lastElement[2]);
-    
+
     let uniqueMonths: { [key: string]: boolean } = {};
     uniqueMonths = monthsBetweenDates.reduce((acc, month) => {
       acc[month] = false;
       return acc;
     }, {});
-    
+
     jsonDataSorted.forEach(row => {
       const monthYear = this.extractMonthYear(row[2]);
       const canceledMonthYear = this.extractMonthYear(row[5]);
 
       let value = parseFloat(row[6]);
-  
+
       if (row[1] == 365) {
         value = value / 12;
-      }  
+      }
 
       const uniqueMonthsNow = { ...uniqueMonths };
       let summed = false;
@@ -143,9 +145,11 @@ export class AppService {
             if (data[monthYearNow]) {
               summed = true;
               data[monthYearNow] += value;
+              dataChrurnClientsActives[monthYearNow]++;
             } else {
               summed = true;
               data[monthYearNow] = value;
+              dataChrurnClientsActives[monthYearNow] = 0;
             }
             uniqueMonthsNow[monthYearNow] = true;
           }
@@ -163,6 +167,7 @@ export class AppService {
     });
 
     let previousKey: string = null;
+    const dataChrurnClientsActivesClone = { ...dataChrurnClientsActives };
 
     Object.entries(data).forEach(([key, value]) => {
       if (occurrence[key] != null) {
@@ -171,29 +176,37 @@ export class AppService {
       const roundedValue = parseFloat(value.toFixed(2));
       const averageValue = roundedValue / (occurrence[key] ? occurrence[key] : occurrence[previousKey]);
       data[key] = { value: roundedValue, averageValue: averageValue };
+      dataChrurnClientsActives[key] = { churn: this.calcularChurn(dataChrurnClientsActivesClone, key, previousKey) };
     });
 
     const sortedKeys = Object.keys(data).sort((a, b) => {
       const dateA = new Date(a);
       const dateB = new Date(b);
-    
+
       return dateA.getTime() - dateB.getTime();
     });
-    
+
+    const sortedKeysChurn = Object.keys(dataChrurnClientsActives).sort((a, b) => {
+      const dateA = new Date(a);
+      const dateB = new Date(b);
+
+      return dateA.getTime() - dateB.getTime();
+    });
+
     const sortedArray: { date: string; value: number; averageValue: number }[] = [];
+    const sortedArrayChurn: { date: string; churn: number; }[] = [];
 
     sortedKeys.forEach((key) => {
       sortedArray.push({ date: key, ...data[key] });
     });
 
-    return sortedArray;
-  }
-  
-  
+    sortedKeysChurn.forEach((key) => {
+      sortedArrayChurn.push({ date: key, ...dataChrurnClientsActives[key] });
+    });
 
-  getDataForChurnChart(jsonData: any[]) {
-   return null;
+    return [sortedArray, sortedArrayChurn];
   }
+
 
   getDataForAvmChart(jsonData: any[]) {
     const data: { [key: string]: number } = {};
@@ -205,24 +218,24 @@ export class AppService {
     let totalCanceledContracts: number = 0;
     let totalActiveTicket: number = 0;
     let totalCanceledTicket: number = 0;
-  
+
     const jsonDataSorted = jsonData.sort((a, b) => {
       const dateA = this.parseDateString(a[2]);
       const dateB = this.parseDateString(b[2]);
-  
+
       return dateA.getTime() - dateB.getTime();
     });
-  
+
     jsonDataSorted.forEach((row) => {
       const monthYear = this.extractMonthYear(row[2]);
       const canceledMonthYear = this.extractMonthYear(row[5]);
       let value = parseFloat(row[6]);
-  
+
       if (row[1] == 365) {
         value = value / 12;
       }
 
-  
+
       if (canceledMonthYear != null) {
         totalCanceledTicket += value;
         totalCanceledContracts++;
@@ -232,7 +245,7 @@ export class AppService {
           canceled[monthYear]++;
         }
       }
-  
+
       if (!occurrence[monthYear]) {
         totalActiveTicket += value;
         totalActiveContracts++;
@@ -243,13 +256,13 @@ export class AppService {
         data[monthYear] += value / occurrence[monthYear];
       }
     });
-  
+
     Object.entries(data).forEach(([key, value]) => {
       const roundedValue = parseFloat(value.toFixed(2));
-      monthlySum.push({date : key, sold : occurrence[key],  canceled : canceled[key] || 0});
+      monthlySum.push({ date: key, sold: occurrence[key], canceled: canceled[key] || 0 });
       result.push({ year: key, value: roundedValue });
     });
-  
+
     result.sort((a, b) => {
       const dateA = this.parseDateString(a['year']);
       const dateB = this.parseDateString(b['year']);
@@ -273,7 +286,7 @@ export class AppService {
       totalActiveTicket: totalActiveTicket.toFixed(2),
       totalCanceledTicket: totalCanceledTicket.toFixed(2),
     }
-  
+
     return [result, monthlySum, cards];
   }
 
@@ -295,14 +308,14 @@ export class AppService {
     const months: string[] = [];
     const startDateParts = startDate.split('/');
     const endDateParts = endDate.split('/');
-  
+
     const startYear = parseInt(startDateParts[2]);
     const endYear = parseInt(endDateParts[2]);
     const startMonth = parseInt(startDateParts[1]) - 1;
     const endMonth = parseInt(endDateParts[1]) - 1;
-  
+
     let currentDate = new Date(startYear, startMonth);
-  
+
     while (currentDate <= new Date(endYear, endMonth)) {
       const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
       const year = currentDate.getFullYear();
@@ -311,5 +324,15 @@ export class AppService {
       currentDate.setMonth(currentDate.getMonth() + 1);
     }
     return months;
+  }
+
+  private calcularChurn(dataChrurnClientsActives: any, key: string, previousKey: string) {
+
+    if (dataChrurnClientsActives[key] >= dataChrurnClientsActives[previousKey]) {
+      return 0;
+    } else {
+
+      return (dataChrurnClientsActives[key] * 100) / (previousKey == null ? dataChrurnClientsActives[key] : dataChrurnClientsActives[previousKey]);
+    }
   }
 }
