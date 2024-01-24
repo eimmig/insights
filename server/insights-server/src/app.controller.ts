@@ -11,11 +11,14 @@ export class AppController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     try {
+      // Check if the uploaded file is a spreadsheet
       if (file.mimetype.includes('sheet')) {
+        // Read the spreadsheet using the xlsx library
         const workbook = xlsx.read(file.buffer, { type: 'buffer' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
+        // Convert the spreadsheet to a JSON object
         const jsonData = xlsx.utils.sheet_to_json(worksheet, {
           raw: false,
           dateNF: 'yyyy-mm-ddTHH:mm:ss.SSSZ',
@@ -24,6 +27,7 @@ export class AppController {
           blankrows: false,
         });
 
+        // Remove specific formatting and get data for charts
         const jsonDataWithoutFormatting = jsonData.map((row: any, index: number) => {
           const newRow: any = {};
           for (const key in row) {
@@ -34,13 +38,16 @@ export class AppController {
           return newRow;
         });
 
+        // Validate the Excel file and get validation results
         const validationResults = this.appService.validateExcel(jsonDataWithoutFormatting);
-        
-        //Remove the first element with the column names
+
+        // Remove the first row of data (assuming it's a header)
         jsonDataWithoutFormatting.shift();
 
+        // Get specific data for the charts to be displayed
         const dataForCharts = this.appService.getDataForCharts(jsonDataWithoutFormatting);
 
+        // Return validation results and data for the charts
         if (validationResults.isValid) { 
           return { success: validationResults.isValid, jsonData: dataForCharts };
         } else {
@@ -50,6 +57,7 @@ export class AppController {
         throw new Error('Invalid file type');
       }
     } catch (error) {
+      // Return error information if an exception occurs
       return { error: true, errors: [`Error during file processing: ${error.message}`] };
     }
   }

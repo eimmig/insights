@@ -30,29 +30,6 @@
           <Button icon="pi pi-arrow-right" @click="visible = true" />
         </div>
       </div>
-      <div class="change-date-filter">
-        <Button
-          label="Apply"
-          @click="setFilters"
-          rounded
-          style="margin-right: 10px"
-        />
-        <div class="flex-auto">
-          <Calendar
-            v-model="startDate"
-            showIcon
-            :manualInput="false"
-            style="margin-right: 10px"
-            dateFormat="dd/mm/yy"
-          />
-          <Calendar
-            v-model="endDate"
-            showIcon
-            :manualInput="false"
-            dateFormat="dd/mm/yy"
-          />
-        </div>
-      </div>
     </header>
     <main>
       <div class="chart-badge">
@@ -132,7 +109,6 @@ import { ref, onMounted } from "vue";
 import * as am5 from "@amcharts/amcharts5";
 import * as am5xy from "@amcharts/amcharts5/xy";
 import am5themes_Dark from "@amcharts/amcharts5/themes/Dark";
-import Calendar from "primevue/calendar";
 import Button from "primevue/button";
 import Card from "primevue/card";
 import Sidebar from "primevue/sidebar";
@@ -141,7 +117,6 @@ import { useRouter } from "vue-router";
 export default {
   name: "InsightsCharts",
   components: {
-    Calendar,
     Button,
     Card,
     Sidebar,
@@ -155,60 +130,6 @@ export default {
     },
     goToHome() {
       this.router.push("/");
-    },
-
-    filterDataByDateRange(data, startDate, endDate) {
-      const filteredData = data.filter((item) => {
-        const itemDate = new Date(item.date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        return itemDate >= start && itemDate <= end;
-      });
-
-      return filteredData;
-    },
-    setChartData() {
-      const filteredMrrData = this.filterDataByDateRange(
-        this.dataCharts.dataMrr,
-        this.startDate,
-        this.endDate
-      );
-      const filteredChurnData = this.filterDataByDateRange(
-        this.dataCharts.dataChurn,
-        this.startDate,
-        this.endDate
-      );
-      const filteredAmvData = this.filterDataByDateRange(
-        this.dataCharts.dataAmv,
-        this.startDate,
-        this.endDate
-      );
-      const filteredAscData = this.filterDataByDateRange(
-        this.dataCharts.dataAsc,
-        this.startDate,
-        this.endDate
-      );
-
-      if (this.chartMrr.value && this.chartMrr.value.series) {
-        const mrrSeries = this.chartMrr.value.series.getIndex(0);
-        mrrSeries.data.setAll(filteredMrrData);
-      }
-
-      if (this.chartChurn && this.chartChurn.series) {
-        const churnSeries = this.chartChurn.series.getIndex(0);
-        churnSeries.data.setAll(filteredChurnData);
-      }
-
-      if (this.chartAmv && this.chartAmv.series) {
-        const amvSeries = this.chartAmv.series.getIndex(0);
-        amvSeries.data.setAll(filteredAmvData);
-      }
-
-      if (this.chartAsc && this.chartAsc.series) {
-        const ascSeries = this.chartAsc.series.getIndex(0);
-        ascSeries.data.setAll(filteredAscData);
-      }
     },
   },
   setup() {
@@ -258,7 +179,7 @@ export default {
           }
         case "amv":
           if (sessionStorageData) {
-            return parsedData.jsonData.dataAvm;
+            return parsedData.jsonData.dataAmv;
           } else {
             return [];
           }
@@ -333,6 +254,7 @@ export default {
         am5xy.ValueAxis.new(root, {
           renderer: valorMedioAxisRenderer,
           tooltip: am5.Tooltip.new(root, {}),
+          min: data[0].averageValue,
         })
       );
 
@@ -341,11 +263,9 @@ export default {
       });
       valorAxisRenderer.grid.template.set("forceHidden", true);
       var valorAxis = chart.yAxes.push(
-        am5xy.DurationAxis.new(root, {
-          baseUnit: "minute",
+        am5xy.ValueAxis.new(root, {
           renderer: valorAxisRenderer,
-          extraMax: 0.3,
-          forceHidden: true,
+          tooltip: am5.Tooltip.new(root, {}),
         })
       );
 
@@ -524,7 +444,7 @@ export default {
 
       var xAxis = chart.xAxes.push(
         am5xy.CategoryAxis.new(root, {
-          categoryField: "year",
+          categoryField: "date",
           renderer: xRenderer,
           tooltip: am5.Tooltip.new(root, {}),
         })
@@ -550,7 +470,7 @@ export default {
           xAxis: xAxis,
           yAxis: yAxis,
           valueYField: "value",
-          categoryXField: "year",
+          categoryXField: "date",
         })
       );
 
@@ -568,7 +488,7 @@ export default {
           yAxis: yAxis,
           valueYField: "valueNext",
           openValueYField: "value",
-          categoryXField: "year",
+          categoryXField: "date",
           fill: am5.color(0x555555),
           stroke: am5.color(0x555555),
         })

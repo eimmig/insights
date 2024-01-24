@@ -8,7 +8,6 @@ import FileUpload from 'primevue/fileupload';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import ToastService from 'primevue/toastservice';
-import Calendar from "primevue/calendar";
 import Card from 'primevue/card';
 import Sidebar from 'primevue/sidebar';
 
@@ -30,7 +29,6 @@ app.use(PrimeVue)
 app.use(FileUpload)
 app.use(InputText)
 app.use(Button)
-app.use(Calendar)
 app.use(Card)
 app.use(Sidebar)
 app.use(ToastService);
