@@ -19,7 +19,7 @@ O sistema foi construído seguindo os princípios da programação orientada a o
 Para executar o projeto localmente, siga as instruções abaixo:
 
 ```bash
-git clone [https://github.com/eimmig/insights.git](https://github.com/eimmig/insights.git)
+git clone https://github.com/eimmig/insights.git
 
 -front
 
