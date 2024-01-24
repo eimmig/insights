@@ -29,6 +29,29 @@
           </Sidebar>
           <Button icon="pi pi-arrow-right" @click="visible = true" />
         </div>
+        <div class="change-date-filter">
+          <Button
+            label="Apply"
+            @click="setFilters"
+            rounded
+            style="margin-right: 10px"
+          />
+          <div class="flex-auto">
+            <Calendar
+              v-model="startDate"
+              showIcon
+              :manualInput="false"
+              style="margin-right: 10px"
+              dateFormat="dd/mm/yy"
+            />
+            <Calendar
+              v-model="endDate"
+              showIcon
+              :manualInput="false"
+              dateFormat="dd/mm/yy"
+            />
+          </div>
+        </div>
       </div>
     </header>
     <main>
@@ -113,6 +136,7 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import Sidebar from "primevue/sidebar";
 import { useRouter } from "vue-router";
+import Calendar from "primevue/calendar";
 
 export default {
   name: "InsightsCharts",
@@ -120,7 +144,8 @@ export default {
     Button,
     Card,
     Sidebar,
-  },
+    Calendar
+},
   methods: {
     openGitHub() {
       window.open("https://github.com/eimmig/insights", "_blank");

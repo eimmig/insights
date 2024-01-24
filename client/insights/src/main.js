@@ -10,6 +10,7 @@ import Button from 'primevue/button';
 import ToastService from 'primevue/toastservice';
 import Card from 'primevue/card';
 import Sidebar from 'primevue/sidebar';
+import Calendar from "primevue/calendar";
 
 
 import 'primevue/resources/themes/lara-dark-green/theme.css'
@@ -31,6 +32,7 @@ app.use(InputText)
 app.use(Button)
 app.use(Card)
 app.use(Sidebar)
+app.use(Calendar)
 app.use(ToastService);
 app.use(router);
 app.mount('#app')
